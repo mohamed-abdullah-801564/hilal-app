@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "Al Hilal",
+    "slug": "alhilal-platform",
+    "version": "1.2.3",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "alhilal-platform",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "NEVER"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0f0f"
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.alhilal.platform",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.islamicaudiohub.com",
+              "pathPrefix": "/audio"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://www.islamicaudiohub.com"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-av"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "137c4830-7942-44ca-aaea-f8aaf1c0c06e"
+      }
+    },
+    "owner": "mohammed-dev"
+  }
+}
