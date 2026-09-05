@@ -52,6 +52,15 @@ function matchesCategory(video: ShortVideo, cat: CatDef): boolean {
   return cat.match.some((m) => v.includes(m.toLowerCase()));
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // ─── One full-screen Short ──────────────────────────────────────────────────
 
 function ShortItem({
@@ -76,6 +85,11 @@ function ShortItem({
   function handlePlaybackStatus(status: any) {
     if (readyToAutoplay || !status?.isLoaded) return;
 
+    if (playbackUri.startsWith("file://")) {
+      setReadyToAutoplay(true);
+      return;
+    }
+
     const buffered = status.playableDurationMillis; // real expo-av field;
     // expo-av's own docs: "only present in some cases" — never invented here.
     if (typeof buffered === "number") {
@@ -96,11 +110,24 @@ function ShortItem({
 
   useEffect(() => {
     let mounted = true;
-    getCachedMediaUri(video.videoUrl, "video").then((cached) => {
-      if (mounted && cached) setPlaybackUri(cached);
-    });
+    const checkCache = async () => {
+      const cached = await getCachedMediaUri(video.videoUrl, "video");
+      if (mounted && cached) {
+        setPlaybackUri(cached);
+        setReadyToAutoplay(true);
+      }
+    };
+    void checkCache();
+
+    if (isActive) {
+      const interval = setInterval(checkCache, 400);
+      return () => {
+        mounted = false;
+        clearInterval(interval);
+      };
+    }
     return () => { mounted = false; };
-  }, [video.videoUrl]);
+  }, [video.videoUrl, isActive]);
 
   // Leaving this clip resets the manual-pause flag, so returning to it
   // later autoplays again rather than staying paused from a prior visit.
@@ -117,11 +144,6 @@ function ShortItem({
   }
 
   function onVideoError(err: any) {
-    // Root-cause visibility: previously nothing consumed this callback, so
-    // a failing clip just hung on the loading spinner forever with zero
-    // diagnostic info. Logged here for real debugging (check device logs /
-    // Metro console), and surfaced to the user with a retry option instead
-    // of a silent stall.
     console.log(`[Shorts] video failed to load: ${video.title || video.id}`);
     console.log(`[Shorts] url: ${video.videoUrl}`);
     console.log("[Shorts] error:", err);
@@ -149,7 +171,13 @@ function ShortItem({
           useControls={false}
           isMuted={muted}
           resizeMode="cover"
-          onLoad={() => { setLoaded(true); setFailed(false); }}
+          onLoad={() => {
+            setLoaded(true);
+            setFailed(false);
+            if (playbackUri.startsWith("file://")) {
+              setReadyToAutoplay(true);
+            }
+          }}
           onError={onVideoError}
           onPlaybackStatus={handlePlaybackStatus}
         />
@@ -225,7 +253,7 @@ export default function ShortsScreen() {
   useEffect(() => {
     let mounted = true;
     getEnabledShortVideos()
-      .then((v) => { if (mounted) setVideos(v); })
+      .then((v) => { if (mounted) setVideos(shuffleArray(v)); })
       .catch(() => { if (mounted) setError(true); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
@@ -333,9 +361,9 @@ export default function ShortsScreen() {
         getItemLayout={(_: ArrayLike<ShortVideo> | null | undefined, index: number) => ({ length: ITEM_H, offset: ITEM_H * index, index })}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
-        initialNumToRender={2}
-        windowSize={3}
-        maxToRenderPerBatch={2}
+        initialNumToRender={3}
+        windowSize={5}
+        maxToRenderPerBatch={3}
         removeClippedSubviews
         style={{ flex: 1 }}
         ListEmptyComponent={

@@ -56,6 +56,9 @@ export default function FavoritesScreen() {
       <ScrollView
         contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: botPad + 80, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        overScrollMode="always"
+        scrollEventThrottle={16}
       >
         <Text style={[styles.title, { color: colors.foreground }]}>பிடித்தவை</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>

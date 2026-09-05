@@ -231,41 +231,11 @@ export default function CategoryScreen() {
   const [quizCard, setQuizCard] = useState<FBCard | null>(null);
   const [hasTransitioned, setHasTransitioned] = useState(false);
 
-  // Sequence order: Quran → Hadith → Asma-ul-Husna → Seerah
-  const nextCategory = React.useMemo(() => {
-    if (!category || !allCats.length) return null;
-    const getSeqKey = (c: { id: string; name: string; nameEn?: string }) => {
-      const text = `${c.id} ${c.nameEn || ""} ${c.name || ""}`.toLowerCase();
-      if (text.includes("quran") || text.includes("குர்ஆன்")) return "quran";
-      if (text.includes("hadith") || text.includes("hadis") || text.includes("ஹதீஸ்")) return "hadith";
-      if (text.includes("asma") || text.includes("husna") || text.includes("அஸ்மா")) return "asma-ul-husna";
-      if (text.includes("seerah") || text.includes("nabi") || text.includes("சீரா") || text.includes("வரலாறு")) return "seerah";
-      return "";
-    };
-    const seq = ["quran", "hadith", "asma-ul-husna", "seerah"];
-    const curKey = getSeqKey(category);
-    const curIdx = seq.indexOf(curKey);
-    if (curIdx !== -1 && curIdx < seq.length - 1) {
-      const targetKey = seq[curIdx + 1];
-      const match = allCats.find(c => getSeqKey(c) === targetKey);
-      if (match) return match;
-    }
-    // Fallback: next in list
-    const idxInList = allCats.findIndex(c => c.id === category.id);
-    if (idxInList !== -1 && idxInList < allCats.length - 1) {
-      return allCats[idxInList + 1];
-    }
-    return null;
+  // Other available categories for free-choice non-linear selection
+  const otherCategories = React.useMemo(() => {
+    if (!category || !allCats.length) return [];
+    return allCats.filter((c) => c.id !== category.id);
   }, [category, allCats]);
-
-  const handleScroll = (event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 40;
-    if (isCloseToBottom && nextCategory && !hasTransitioned) {
-      setHasTransitioned(true);
-      router.replace(`/category/${nextCategory.id}` as any);
-    }
-  };
 
   const categoryName = category?.name ?? "";
   const playlist: Track[] = cards.map(c => fbCardToTrack(c, categoryName));
@@ -346,16 +316,17 @@ export default function CategoryScreen() {
             {[0, 1, 2, 3, 4].map(i => <SkeletonRow key={i} color={color} isDark={isDark} />)}
           </View>
         ) : cards.length === 0 ? (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]} bounces={true} overScrollMode="always">
             <EmptyCards color={color} isDark={isDark} />
           </ScrollView>
         ) : (
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}
             showsVerticalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={200}
+            bounces={true}
+            overScrollMode="always"
+            scrollEventThrottle={16}
           >
             <View style={styles.sectionRow}>
               <View style={[styles.sectionDot, { backgroundColor: color }]} />
@@ -390,28 +361,47 @@ export default function CategoryScreen() {
               </Pressable>
             )}
 
-            {nextCategory && (
-              <Pressable
-                onPress={() => {
-                  setHasTransitioned(true);
-                  router.replace(`/category/${nextCategory.id}` as any);
-                }}
-                style={[
-                  styles.nextCatCard,
-                  { backgroundColor: nextCategory.color + "18", borderColor: nextCategory.color + "44" }
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.nextCatSub, { color: isDark ? "#aaa" : "#555" }]}>அடுத்த பிரிவு</Text>
-                  <Text style={[styles.nextCatTitle, { color: isDark ? "#fff" : "#1a1a1a" }]}>{nextCategory.name}</Text>
+            {/* Free-Choice Category Selection (Non-Linear Navigation) */}
+            {otherCategories.length > 0 && (
+              <View style={styles.otherCatsSection}>
+                <View style={styles.sectionRow}>
+                  <View style={[styles.sectionDot, { backgroundColor: color }]} />
+                  <Text style={[styles.sectionTitle, { color: sectionTxtClr }]}>மற்ற பிரிவுகள்</Text>
                 </View>
-                <View style={[styles.nextCatArrow, { backgroundColor: nextCategory.color }]}>
-                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                <View style={styles.otherCatsGrid}>
+                  {otherCategories.map((cat) => (
+                    <Pressable
+                      key={cat.id}
+                      onPress={() => router.push(`/category/${cat.id}` as any)}
+                      style={[
+                        styles.otherCatCard,
+                        {
+                          backgroundColor: isDark ? "#ffffff0d" : "#00000006",
+                          borderColor: isDark ? "#ffffff22" : "#00000012",
+                        },
+                      ]}
+                    >
+                      <View style={[styles.otherCatIconCircle, { backgroundColor: (cat.color || color) + "22" }]}>
+                        <Text style={styles.otherCatEmoji}>{cat.icon || "📚"}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.otherCatName, { color: isDark ? "#ffffff" : "#1a1a1a" }]} numberOfLines={1}>
+                          {cat.name}
+                        </Text>
+                        {!!cat.description && (
+                          <Text style={[styles.otherCatSub, { color: isDark ? "#aaaaaa" : "#666666" }]} numberOfLines={1}>
+                            {cat.description}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={[styles.otherCatArrow, { backgroundColor: cat.color || color }]}>
+                        <Ionicons name="arrow-forward" size={14} color="#fff" />
+                      </View>
+                    </Pressable>
+                  ))}
                 </View>
-              </Pressable>
+              </View>
             )}
-
-            <View style={{ height: 140 }} />
           </ScrollView>
         )}
 
@@ -533,11 +523,15 @@ const styles = StyleSheet.create({
   },
   loadMoreTxt: { fontSize: 13, fontWeight: "700" },
 
-  nextCatCard: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    padding: 16, borderRadius: 14, borderWidth: 1, marginTop: 16, marginHorizontal: 4,
+  otherCatsSection: { marginTop: 24, paddingHorizontal: 2 },
+  otherCatsGrid: { gap: 10, marginTop: 10 },
+  otherCatCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    padding: 12, borderRadius: 14, borderWidth: 1,
   },
-  nextCatSub: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
-  nextCatTitle: { fontSize: 15, fontWeight: "800", marginTop: 2 },
-  nextCatArrow: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  otherCatIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  otherCatEmoji: { fontSize: 20 },
+  otherCatName: { fontSize: 14, fontWeight: "700" },
+  otherCatSub: { fontSize: 11, marginTop: 2 },
+  otherCatArrow: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 });

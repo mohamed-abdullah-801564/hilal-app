@@ -372,6 +372,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        bounces={true}
+        overScrollMode="always"
+        scrollEventThrottle={16}
       >
         {/* Bismillah */}
         <BismillahBanner isDark={isDark} />
@@ -612,7 +615,7 @@ const styles = StyleSheet.create({
   searchMic: { paddingHorizontal: 12 },
 
   // Scroll
-  scroll: { paddingHorizontal: 16, paddingTop: 14 },
+  scroll: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 140 },
 
   // Bismillah
   bismillah: {
